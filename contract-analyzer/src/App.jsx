@@ -3,7 +3,7 @@ import { Upload, CheckCircle, Scale, AlertTriangle, ChevronRight, Loader2, Exter
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 const ContractAnalyzer = () => {
   const [stage, setStage] = useState('landing');
