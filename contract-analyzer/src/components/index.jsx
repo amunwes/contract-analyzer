@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import LandingPage from './LandingPage';
 import ProcessingScreen from './ProcessingScreen';
 import ResultsView from './ResultsView';
-import { extractTextFromPDF, renderAllPages, findKeywordPassages } from '../utils/pdfUtils';
+import { extractTextFromPDF, renderAllPages } from '../utils/pdfUtils';
+import { analyzeEntireContract } from '../services/anthropicService';
 import './styles.css';
 
 const ContractAnalyzer = () => {
@@ -12,8 +13,9 @@ const ContractAnalyzer = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [extractedText, setExtractedText] = useState('');
   const [selectedText, setSelectedText] = useState('');
-  const [highlights, setHighlights] = useState([]);
   const [renderedPages, setRenderedPages] = useState([]);
+  const [analysisResults, setAnalysisResults] = useState([]);
+  const [analysisProgress, setAnalysisProgress] = useState({ current: 0, total: 0 });
   const lawyerFormRef = useRef(null);
 
   const [formData, setFormData] = useState({
@@ -37,14 +39,26 @@ const ContractAnalyzer = () => {
       setStage('processing');
       
       try {
+        // Extract text from PDF
         const { pdf, fullText } = await extractTextFromPDF(file);
         setPdfDoc(pdf);
         setTotalPages(pdf.numPages);
         setExtractedText(fullText);
+
+        // Analyze the contract with Claude
+        const results = await analyzeEntireContract(
+          fullText, 
+          pdf.numPages,
+          (current, total) => {
+            setAnalysisProgress({ current, total });
+          }
+        );
+        
+        setAnalysisResults(results);
         setStage('results');
       } catch (error) {
         console.error('Error processing PDF:', error);
-        alert('Error processing PDF. Please try again.');
+        alert(`Error: ${error.message}`);
         setStage('landing');
       }
     } else {
@@ -63,17 +77,6 @@ const ContractAnalyzer = () => {
     renderPages();
   }, [pdfDoc, stage]);
 
-  // NEW: Find passages with "employee" when PDF is loaded
-  useEffect(() => {
-    const findEmployeePassages = async () => {
-      if (pdfDoc && stage === 'results') {
-        const passages = await findKeywordPassages(pdfDoc, ['employee']);
-        setHighlights(passages);
-      }
-    };
-    findEmployeePassages();
-  }, [pdfDoc, stage]);
-
   // Handle text selection
   const handleTextSelection = () => {
     const selection = window.getSelection();
@@ -85,30 +88,10 @@ const ContractAnalyzer = () => {
     }
   };
 
-  // Add highlight to sidebar
-  const addHighlight = () => {
-    if (selectedText) {
-      const newHighlight = {
-        id: `manual-${Date.now()}`,
-        text: selectedText,
-        page: null, // Manual highlights don't have a specific page
-        timestamp: new Date().toLocaleString()
-      };
-      setHighlights([...highlights, newHighlight]);
-      setSelectedText('');
-      window.getSelection().removeAllRanges();
-    }
-  };
-
   // Copy text to clipboard
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     alert('Copied to clipboard!');
-  };
-
-  // Remove highlight
-  const removeHighlight = (id) => {
-    setHighlights(highlights.filter(h => h.id !== id));
   };
 
   // Scroll to lawyer form
@@ -133,37 +116,35 @@ const ContractAnalyzer = () => {
     alert('Thank you! A lawyer will contact you within 1-2 business days.');
   };
 
-  // Render based on stage
-  if (stage === 'landing') {
-    return <LandingPage onFileUpload={handleFileUpload} />;
-  }
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {stage === 'landing' && (
+        <LandingPage onFileUpload={handleFileUpload} />
+      )}
 
-  if (stage === 'processing') {
-    return <ProcessingScreen />;
-  }
+      {stage === 'processing' && (
+        <ProcessingScreen 
+          progress={analysisProgress}
+          totalPages={totalPages}
+        />
+      )}
 
-  if (stage === 'results') {
-    return (
-      <ResultsView
-        contractFile={contractFile}
-        totalPages={totalPages}
-        renderedPages={renderedPages}
-        selectedText={selectedText}
-        highlights={highlights}
-        formData={formData}
-        lawyerFormRef={lawyerFormRef}
-        onTextSelection={handleTextSelection}
-        onAddHighlight={addHighlight}
-        onCopyHighlight={copyToClipboard}
-        onRemoveHighlight={removeHighlight}
-        onScrollToLawyer={scrollToLawyerForm}
-        onFormChange={handleFormChange}
-        onFormSubmit={handleFormSubmit}
-      />
-    );
-  }
-
-  return null;
+      {stage === 'results' && (
+        <ResultsView
+          renderedPages={renderedPages}
+          selectedText={selectedText}
+          analysisResults={analysisResults}
+          onTextSelection={handleTextSelection}
+          onCopyText={copyToClipboard}
+          onConsultLawyer={scrollToLawyerForm}
+          lawyerFormRef={lawyerFormRef}
+          formData={formData}
+          onFormChange={handleFormChange}
+          onFormSubmit={handleFormSubmit}
+        />
+      )}
+    </div>
+  );
 };
 
 export default ContractAnalyzer;
