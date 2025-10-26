@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, BookOpen, ChevronDown, ChevronUp, Copy, ExternalLink } from 'lucide-react';
+import { AlertTriangle, BookOpen, ChevronDown, ChevronUp, Copy, ExternalLink, ThumbsUp, ThumbsDown, MessageSquare } from 'lucide-react';
 
 const AnalysisSidebar = ({ 
   analysisResults, 
@@ -10,6 +10,10 @@ const AnalysisSidebar = ({
   const [expandedSections, setExpandedSections] = useState(
     analysisResults.map((_, i) => i === 0) // Only first section expanded by default
   );
+  const [feedback, setFeedback] = useState({}); // { sectionIndex: { rating: 'up'|'down', comment: '' } }
+  const [showCommentBox, setShowCommentBox] = useState({}); // { sectionIndex: boolean }
+  const [overallFeedback, setOverallFeedback] = useState({ rating: null, comment: '', submitted: false });
+  const [showOverallComment, setShowOverallComment] = useState(false);
 
   const toggleSection = (index) => {
     setExpandedSections(prev => {
@@ -17,6 +21,46 @@ const AnalysisSidebar = ({
       newExpanded[index] = !newExpanded[index];
       return newExpanded;
     });
+  };
+
+  const handleFeedback = (sectionIndex, rating) => {
+    setFeedback(prev => ({
+      ...prev,
+      [sectionIndex]: { ...prev[sectionIndex], rating }
+    }));
+    
+    // Log feedback (you can replace this with an API call later)
+    console.log('Feedback submitted:', {
+      page: analysisResults[sectionIndex].sectionNumber,
+      rating,
+      timestamp: new Date().toISOString()
+    });
+  };
+
+  const handleCommentSubmit = (sectionIndex) => {
+    const comment = feedback[sectionIndex]?.comment;
+    if (!comment?.trim()) return;
+
+    // Log feedback with comment (you can replace this with an API call later)
+    console.log('Feedback with comment submitted:', {
+      page: analysisResults[sectionIndex].sectionNumber,
+      rating: feedback[sectionIndex]?.rating,
+      comment: comment,
+      timestamp: new Date().toISOString()
+    });
+
+    // Hide comment box after submission
+    setShowCommentBox(prev => ({ ...prev, [sectionIndex]: false }));
+    
+    // Show confirmation
+    alert('Thank you for your feedback!');
+  };
+
+  const toggleCommentBox = (sectionIndex) => {
+    setShowCommentBox(prev => ({
+      ...prev,
+      [sectionIndex]: !prev[sectionIndex]
+    }));
   };
 
   const totalRedFlags = analysisResults.reduce(
@@ -119,6 +163,81 @@ const AnalysisSidebar = ({
                     ⚠️ {result.error}
                   </div>
                 )}
+
+                {/* Feedback Section */}
+                <div className="border-t pt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-gray-600">Was this analysis helpful?</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleFeedback(index, 'up')}
+                        className={`p-1.5 rounded transition-colors ${
+                          feedback[index]?.rating === 'up'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600'
+                        }`}
+                        title="Helpful"
+                      >
+                        <ThumbsUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleFeedback(index, 'down')}
+                        className={`p-1.5 rounded transition-colors ${
+                          feedback[index]?.rating === 'down'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
+                        }`}
+                        title="Not helpful"
+                      >
+                        <ThumbsDown className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => toggleCommentBox(index)}
+                        className="p-1.5 rounded bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        title="Add comment"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Comment Box */}
+                  {showCommentBox[index] && (
+                    <div className="mt-2 space-y-2">
+                      <textarea
+                        value={feedback[index]?.comment || ''}
+                        onChange={(e) => setFeedback(prev => ({
+                          ...prev,
+                          [index]: { ...prev[index], comment: e.target.value }
+                        }))}
+                        placeholder="Tell us more about your experience with this analysis..."
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        rows={3}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleCommentSubmit(index)}
+                          className="flex-1 bg-indigo-600 text-white text-xs font-medium py-1.5 px-3 rounded hover:bg-indigo-700"
+                        >
+                          Submit Feedback
+                        </button>
+                        <button
+                          onClick={() => toggleCommentBox(index)}
+                          className="flex-1 bg-gray-200 text-gray-700 text-xs font-medium py-1.5 px-3 rounded hover:bg-gray-300"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Feedback confirmation */}
+                  {feedback[index]?.rating && !showCommentBox[index] && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      ✓ Thank you for your feedback!
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>
