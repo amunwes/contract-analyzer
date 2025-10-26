@@ -68,3 +68,67 @@ export const renderAllPages = async (pdfDoc, scale = 1.5) => {
 
   return pages;
 };
+
+// NEW: Find passages containing keywords
+export const findKeywordPassages = async (pdfDoc, keywords) => {
+  if (!pdfDoc) return [];
+
+  const passages = [];
+  const keywordsLower = keywords.map(k => k.toLowerCase());
+
+  for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+    try {
+      const page = await pdfDoc.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      
+      // Group text items into lines based on vertical position
+      const lines = [];
+      let currentLine = [];
+      let lastY = null;
+      
+      textContent.items.forEach((item) => {
+        const y = item.transform[5]; // Y position
+        
+        // If Y position changed significantly, start a new line
+        if (lastY !== null && Math.abs(y - lastY) > 5) {
+          if (currentLine.length > 0) {
+            lines.push(currentLine.join(' '));
+          }
+          currentLine = [item.str];
+        } else {
+          currentLine.push(item.str);
+        }
+        lastY = y;
+      });
+      
+      // Don't forget the last line
+      if (currentLine.length > 0) {
+        lines.push(currentLine.join(' '));
+      }
+
+      // Check each line for keywords
+      lines.forEach((line, lineIndex) => {
+        const lineLower = line.toLowerCase();
+        const foundKeywords = keywordsLower.filter(keyword => 
+          lineLower.includes(keyword)
+        );
+        
+        if (foundKeywords.length > 0) {
+          passages.push({
+            id: `${pageNum}-${lineIndex}`,
+            page: pageNum,
+            text: line.trim(),
+            keywords: foundKeywords,
+            timestamp: new Date().toLocaleString()
+          });
+        }
+      });
+
+    } catch (error) {
+      console.error(`Error finding keywords on page ${pageNum}:`, error);
+    }
+  }
+
+  console.log(`Found ${passages.length} passages containing keywords:`, keywords);
+  return passages;
+};

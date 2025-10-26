@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import LandingPage from './LandingPage';
 import ProcessingScreen from './ProcessingScreen';
 import ResultsView from './ResultsView';
-import { extractTextFromPDF, renderAllPages } from '../utils/pdfUtils';
+import { extractTextFromPDF, renderAllPages, findKeywordPassages } from '../utils/pdfUtils';
 import './styles.css';
 
 const ContractAnalyzer = () => {
@@ -63,6 +63,17 @@ const ContractAnalyzer = () => {
     renderPages();
   }, [pdfDoc, stage]);
 
+  // NEW: Find passages with "employee" when PDF is loaded
+  useEffect(() => {
+    const findEmployeePassages = async () => {
+      if (pdfDoc && stage === 'results') {
+        const passages = await findKeywordPassages(pdfDoc, ['employee']);
+        setHighlights(passages);
+      }
+    };
+    findEmployeePassages();
+  }, [pdfDoc, stage]);
+
   // Handle text selection
   const handleTextSelection = () => {
     const selection = window.getSelection();
@@ -78,8 +89,9 @@ const ContractAnalyzer = () => {
   const addHighlight = () => {
     if (selectedText) {
       const newHighlight = {
-        id: Date.now(),
+        id: `manual-${Date.now()}`,
         text: selectedText,
+        page: null, // Manual highlights don't have a specific page
         timestamp: new Date().toLocaleString()
       };
       setHighlights([...highlights, newHighlight]);

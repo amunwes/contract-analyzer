@@ -14,7 +14,7 @@ const HighlightsSidebar = ({
       <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
         <h3 className="font-semibold text-blue-900 mb-2">How to Use</h3>
         <p className="text-sm text-blue-800">
-          Select text in the PDF to highlight it. Click "Add Highlight" to save it to your notes.
+          Select text in the PDF to highlight it, or view automatically detected passages below.
         </p>
       </div>
 
@@ -50,7 +50,23 @@ const HighlightsSidebar = ({
                 className="bg-yellow-50 border border-yellow-200 rounded p-3"
               >
                 <div className="flex items-start justify-between mb-2">
-                  <span className="text-xs text-gray-600">{highlight.timestamp}</span>
+                  <div className="flex flex-col gap-1">
+                    {highlight.page && (
+                      <span className="text-xs text-gray-600">Page {highlight.page}</span>
+                    )}
+                    {highlight.keywords && (
+                      <div className="flex gap-1 flex-wrap">
+                        {highlight.keywords.map((keyword, idx) => (
+                          <span 
+                            key={idx}
+                            className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded"
+                          >
+                            {keyword}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => onCopyHighlight(highlight.text)}
@@ -69,6 +85,7 @@ const HighlightsSidebar = ({
                   </div>
                 </div>
                 <p className="text-sm text-gray-800">"{highlight.text}"</p>
+                <p className="text-xs text-gray-500 mt-1">{highlight.timestamp}</p>
               </div>
             ))}
           </div>
