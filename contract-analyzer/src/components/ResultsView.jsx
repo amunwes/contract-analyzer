@@ -1,22 +1,18 @@
 import React from 'react';
 import { Scale } from 'lucide-react';
 import PDFViewer from './PDFViewer';
-import HighlightsSidebar from './HighlightsSidebar';
+import AnalysisSidebar from './AnalysisSidebar';
 import LawyerForm from './LawyerForm';
 
 const ResultsView = ({
-  contractFile,
-  totalPages,
   renderedPages,
   selectedText,
-  highlights,
-  formData,
-  lawyerFormRef,
+  analysisResults,
   onTextSelection,
-  onAddHighlight,
-  onCopyHighlight,
-  onRemoveHighlight,
-  onScrollToLawyer,
+  onCopyText,
+  onConsultLawyer,
+  lawyerFormRef,
+  formData,
   onFormChange,
   onFormSubmit
 }) => {
@@ -28,9 +24,9 @@ const ResultsView = ({
             <div className="flex items-center gap-3">
               <Scale className="w-8 h-8 text-indigo-600" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Contract Review</h1>
+                <h1 className="text-xl font-bold text-gray-900">Contract Analysis Results</h1>
                 <p className="text-sm text-gray-600">
-                  {contractFile?.name} • {totalPages} pages
+                  Simplified summaries and potential red flags identified
                 </p>
               </div>
             </div>
@@ -45,13 +41,11 @@ const ResultsView = ({
             onTextSelection={onTextSelection}
           />
           
-          <HighlightsSidebar
+          <AnalysisSidebar
+            analysisResults={analysisResults}
             selectedText={selectedText}
-            highlights={highlights}
-            onAddHighlight={onAddHighlight}
-            onCopyHighlight={onCopyHighlight}
-            onRemoveHighlight={onRemoveHighlight}
-            onConsultLawyer={onScrollToLawyer}
+            onCopyText={onCopyText}
+            onConsultLawyer={onConsultLawyer}
           />
         </div>
       </div>
