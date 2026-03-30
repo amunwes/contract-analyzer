@@ -9,6 +9,19 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-typescript-next",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "anthropic.claude-code"
+      ]
+    }
+  },
   "dependencies": {
     "lucide-react": "^0.548.0",
     "pdfjs-dist": "^5.4.296",
