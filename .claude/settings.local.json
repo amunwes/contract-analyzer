@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git mv:*)",
+      "Bash(mv /workspaces/contract-analyzer/contract-analyzer/node_modules /workspaces/contract-analyzer/)",
+      "Bash(rmdir /workspaces/contract-analyzer/contract-analyzer)",
+      "Bash(sudo mv:*)",
+      "Bash(sudo rmdir:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
