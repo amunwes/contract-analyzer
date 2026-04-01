@@ -1,150 +1,158 @@
-import React, { useState, useRef, useEffect } from 'react';
-import LandingPage from './LandingPage';
-import ProcessingScreen from './ProcessingScreen';
-import ResultsView from './ResultsView';
-import { extractTextFromPDF, renderAllPages } from '../utils/pdfUtils';
-import { analyzeEntireContract } from '../services/anthropicService';
-import './styles.css';
+import React, { useEffect, useRef, useState } from "react";
+import { analyzeEntireContract } from "../services/anthropicService";
+import { extractTextFromPDF, renderAllPages } from "../utils/pdfUtils";
+import LandingPage from "./LandingPage";
+import ProcessingScreen from "./ProcessingScreen";
+import ResultsView from "./ResultsView";
+import "./styles.css";
 
 const ContractAnalyzer = () => {
-  const [stage, setStage] = useState('landing');
-  const [contractFile, setContractFile] = useState(null);
-  const [pdfDoc, setPdfDoc] = useState(null);
-  const [totalPages, setTotalPages] = useState(0);
-  const [extractedText, setExtractedText] = useState('');
-  const [selectedText, setSelectedText] = useState('');
-  const [renderedPages, setRenderedPages] = useState([]);
-  const [analysisResults, setAnalysisResults] = useState([]);
-  const [analysisProgress, setAnalysisProgress] = useState({ current: 0, total: 0 });
-  const lawyerFormRef = useRef(null);
+	const [stage, setStage] = useState("landing");
+	const [_contractFile, setContractFile] = useState(null);
+	const [pdfDoc, setPdfDoc] = useState(null);
+	const [totalPages, setTotalPages] = useState(0);
+	const [_extractedText, setExtractedText] = useState("");
+	const [selectedText, setSelectedText] = useState("");
+	const [renderedPages, setRenderedPages] = useState([]);
+	const [analysisResults, setAnalysisResults] = useState([]);
+	const [analysisProgress, setAnalysisProgress] = useState({
+		current: 0,
+		total: 0,
+	});
+	const lawyerFormRef = useRef(null);
 
-  const [formData, setFormData] = useState({
-    fullName: '', 
-    email: '', 
-    phoneNumber: '', 
-    contractType: '',
-    urgency: '', 
-    briefDescription: '', 
-    location: '', 
-    preferredContact: '', 
-    employmentSector: '', 
-    consentToContact: false
-  });
+	const [formData, setFormData] = useState({
+		fullName: "",
+		email: "",
+		phoneNumber: "",
+		contractType: "",
+		urgency: "",
+		briefDescription: "",
+		location: "",
+		preferredContact: "",
+		employmentSector: "",
+		consentToContact: false,
+	});
 
-  // Handle PDF upload
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file && file.type === 'application/pdf') {
-      setContractFile(file);
-      setStage('processing');
-      
-      try {
-        // Extract text from PDF
-        const { pdf, fullText } = await extractTextFromPDF(file);
-        setPdfDoc(pdf);
-        setTotalPages(pdf.numPages);
-        setExtractedText(fullText);
+	// Handle PDF upload
+	const handleFileUpload = async (e) => {
+		const file = e.target.files[0];
+		if (file && file.type === "application/pdf") {
+			setContractFile(file);
+			setStage("processing");
 
-        // Analyze the contract with Claude
-        const results = await analyzeEntireContract(
-          fullText, 
-          pdf.numPages,
-          (current, total) => {
-            setAnalysisProgress({ current, total });
-          }
-        );
-        
-        setAnalysisResults(results);
-        setStage('results');
-      } catch (error) {
-        console.error('Error processing PDF:', error);
-        alert(`Error: ${error.message}`);
-        setStage('landing');
-      }
-    } else {
-      alert('Please upload a PDF file');
-    }
-  };
+			try {
+				// Extract text from PDF
+				const { pdf, fullText } = await extractTextFromPDF(file);
+				setPdfDoc(pdf);
+				setTotalPages(pdf.numPages);
+				setExtractedText(fullText);
 
-  // Render all pages when PDF doc is loaded
-  useEffect(() => {
-    const renderPages = async () => {
-      if (pdfDoc && stage === 'results') {
-        const pages = await renderAllPages(pdfDoc);
-        setRenderedPages(pages);
-      }
-    };
-    renderPages();
-  }, [pdfDoc, stage]);
+				// Analyze the contract with Claude
+				const results = await analyzeEntireContract(
+					fullText,
+					pdf.numPages,
+					(current, total) => {
+						setAnalysisProgress({ current, total });
+					},
+				);
 
-  // Handle text selection
-  const handleTextSelection = () => {
-    const selection = window.getSelection();
-    const text = selection.toString().trim();
-    
-    if (text && text.length > 0) {
-      setSelectedText(text);
-      console.log('Selected text:', text);
-    }
-  };
+				setAnalysisResults(results);
+				setStage("results");
+			} catch (error) {
+				console.error("Error processing PDF:", error);
+				alert(`Error: ${error.message}`);
+				setStage("landing");
+			}
+		} else {
+			alert("Please upload a PDF file");
+		}
+	};
 
-  // Copy text to clipboard
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    alert('Copied to clipboard!');
-  };
+	// Render all pages when PDF doc is loaded
+	useEffect(() => {
+		const renderPages = async () => {
+			if (pdfDoc && stage === "results") {
+				const pages = await renderAllPages(pdfDoc);
+				setRenderedPages(pages);
+			}
+		};
+		renderPages();
+	}, [pdfDoc, stage]);
 
-  // Scroll to lawyer form
-  const scrollToLawyerForm = () => {
-    lawyerFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+	// Handle text selection
+	const handleTextSelection = () => {
+		const selection = window.getSelection();
+		const text = selection.toString().trim();
 
-  // Handle form change
-  const handleFormChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+		if (text && text.length > 0) {
+			setSelectedText(text);
+			console.log("Selected text:", text);
+		}
+	};
 
-  // Handle form submit
-  const handleFormSubmit = () => {
-    if (!formData.fullName || !formData.email || !formData.contractType || 
-        !formData.urgency || !formData.briefDescription || !formData.location || 
-        !formData.preferredContact || !formData.consentToContact) {
-      alert('Please fill in all required fields');
-      return;
-    }
-    console.log('Form submitted:', formData);
-    alert('Thank you! A lawyer will contact you within 1-2 business days.');
-  };
+	// Copy text to clipboard
+	const copyToClipboard = (text) => {
+		navigator.clipboard.writeText(text);
+		alert("Copied to clipboard!");
+	};
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {stage === 'landing' && (
-        <LandingPage onFileUpload={handleFileUpload} />
-      )}
+	// Scroll to lawyer form
+	const scrollToLawyerForm = () => {
+		lawyerFormRef.current?.scrollIntoView({
+			behavior: "smooth",
+			block: "start",
+		});
+	};
 
-      {stage === 'processing' && (
-        <ProcessingScreen 
-          progress={analysisProgress}
-          totalPages={totalPages}
-        />
-      )}
+	// Handle form change
+	const handleFormChange = (field, value) => {
+		setFormData((prev) => ({ ...prev, [field]: value }));
+	};
 
-      {stage === 'results' && (
-        <ResultsView
-          renderedPages={renderedPages}
-          selectedText={selectedText}
-          analysisResults={analysisResults}
-          onTextSelection={handleTextSelection}
-          onCopyText={copyToClipboard}
-          onConsultLawyer={scrollToLawyerForm}
-          lawyerFormRef={lawyerFormRef}
-          formData={formData}
-          onFormChange={handleFormChange}
-          onFormSubmit={handleFormSubmit}
-        />
-      )}
-    </div>
-  );
+	// Handle form submit
+	const handleFormSubmit = () => {
+		if (
+			!formData.fullName ||
+			!formData.email ||
+			!formData.contractType ||
+			!formData.urgency ||
+			!formData.briefDescription ||
+			!formData.location ||
+			!formData.preferredContact ||
+			!formData.consentToContact
+		) {
+			alert("Please fill in all required fields");
+			return;
+		}
+		console.log("Form submitted:", formData);
+		alert("Thank you! A lawyer will contact you within 1-2 business days.");
+	};
+
+	return (
+		<div className="min-h-screen bg-gray-50">
+			{stage === "landing" && <LandingPage onFileUpload={handleFileUpload} />}
+
+			{stage === "processing" && (
+				<ProcessingScreen progress={analysisProgress} totalPages={totalPages} />
+			)}
+
+			{stage === "results" && (
+				<ResultsView
+					renderedPages={renderedPages}
+					selectedText={selectedText}
+					analysisResults={analysisResults}
+					onTextSelection={handleTextSelection}
+					onCopyText={copyToClipboard}
+					onConsultLawyer={scrollToLawyerForm}
+					lawyerFormRef={lawyerFormRef}
+					formData={formData}
+					onFormChange={handleFormChange}
+					onFormSubmit={handleFormSubmit}
+				/>
+			)}
+		</div>
+	);
 };
 
 export default ContractAnalyzer;
