@@ -1,270 +1,307 @@
-import React, { useState } from 'react';
-import { AlertTriangle, BookOpen, ChevronDown, ChevronUp, Copy, ExternalLink, ThumbsUp, ThumbsDown, MessageSquare } from 'lucide-react';
+import {
+	AlertTriangle,
+	BookOpen,
+	ChevronDown,
+	ChevronUp,
+	Copy,
+	ExternalLink,
+	MessageSquare,
+	ThumbsDown,
+	ThumbsUp,
+} from "lucide-react";
+import React, { useState } from "react";
 
-const AnalysisSidebar = ({ 
-  analysisResults, 
-  selectedText,
-  onCopyText, 
-  onConsultLawyer 
+const AnalysisSidebar = ({
+	analysisResults,
+	selectedText,
+	onCopyText,
+	onConsultLawyer,
 }) => {
-  const [expandedSections, setExpandedSections] = useState(
-    analysisResults.map((_, i) => i === 0) // Only first section expanded by default
-  );
-  const [feedback, setFeedback] = useState({}); // { sectionIndex: { rating: 'up'|'down', comment: '' } }
-  const [showCommentBox, setShowCommentBox] = useState({}); // { sectionIndex: boolean }
-  const [overallFeedback, setOverallFeedback] = useState({ rating: null, comment: '', submitted: false });
-  const [showOverallComment, setShowOverallComment] = useState(false);
+	const [expandedSections, setExpandedSections] = useState(
+		analysisResults.map((_, i) => i === 0), // Only first section expanded by default
+	);
+	const [feedback, setFeedback] = useState({}); // { sectionIndex: { rating: 'up'|'down', comment: '' } }
+	const [showCommentBox, setShowCommentBox] = useState({}); // { sectionIndex: boolean }
+	const [_overallFeedback, _setOverallFeedback] = useState({
+		rating: null,
+		comment: "",
+		submitted: false,
+	});
+	const [_showOverallComment, _setShowOverallComment] = useState(false);
 
-  const toggleSection = (index) => {
-    setExpandedSections(prev => {
-      const newExpanded = [...prev];
-      newExpanded[index] = !newExpanded[index];
-      return newExpanded;
-    });
-  };
+	const toggleSection = (index) => {
+		setExpandedSections((prev) => {
+			const newExpanded = [...prev];
+			newExpanded[index] = !newExpanded[index];
+			return newExpanded;
+		});
+	};
 
-  const handleFeedback = (sectionIndex, rating) => {
-    setFeedback(prev => ({
-      ...prev,
-      [sectionIndex]: { ...prev[sectionIndex], rating }
-    }));
-    
-    // Log feedback (you can replace this with an API call later)
-    console.log('Feedback submitted:', {
-      page: analysisResults[sectionIndex].sectionNumber,
-      rating,
-      timestamp: new Date().toISOString()
-    });
-  };
+	const handleFeedback = (sectionIndex, rating) => {
+		setFeedback((prev) => ({
+			...prev,
+			[sectionIndex]: { ...prev[sectionIndex], rating },
+		}));
 
-  const handleCommentSubmit = (sectionIndex) => {
-    const comment = feedback[sectionIndex]?.comment;
-    if (!comment?.trim()) return;
+		// Log feedback (you can replace this with an API call later)
+		console.log("Feedback submitted:", {
+			page: analysisResults[sectionIndex].sectionNumber,
+			rating,
+			timestamp: new Date().toISOString(),
+		});
+	};
 
-    // Log feedback with comment (you can replace this with an API call later)
-    console.log('Feedback with comment submitted:', {
-      page: analysisResults[sectionIndex].sectionNumber,
-      rating: feedback[sectionIndex]?.rating,
-      comment: comment,
-      timestamp: new Date().toISOString()
-    });
+	const handleCommentSubmit = (sectionIndex) => {
+		const comment = feedback[sectionIndex]?.comment;
+		if (!comment?.trim()) return;
 
-    // Hide comment box after submission
-    setShowCommentBox(prev => ({ ...prev, [sectionIndex]: false }));
-    
-    // Show confirmation
-    alert('Thank you for your feedback!');
-  };
+		// Log feedback with comment (you can replace this with an API call later)
+		console.log("Feedback with comment submitted:", {
+			page: analysisResults[sectionIndex].sectionNumber,
+			rating: feedback[sectionIndex]?.rating,
+			comment: comment,
+			timestamp: new Date().toISOString(),
+		});
 
-  const toggleCommentBox = (sectionIndex) => {
-    setShowCommentBox(prev => ({
-      ...prev,
-      [sectionIndex]: !prev[sectionIndex]
-    }));
-  };
+		// Hide comment box after submission
+		setShowCommentBox((prev) => ({ ...prev, [sectionIndex]: false }));
 
-  const totalRedFlags = analysisResults.reduce(
-    (sum, result) => sum + (result.redFlags?.length || 0), 
-    0
-  );
+		// Show confirmation
+		alert("Thank you for your feedback!");
+	};
 
-  return (
-    <div className="w-96 space-y-4 overflow-auto bg-gray-50 rounded-lg p-4" style={{ maxHeight: '85vh' }}>
-      {/* Summary Card */}
-      <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-4">
-        <h3 className="font-semibold text-indigo-900 mb-2">Contract Analysis</h3>
-        <div className="space-y-1 text-sm text-indigo-800">
-          <p>📄 {analysisResults.length} section{analysisResults.length !== 1 ? 's' : ''} analyzed</p>
-          <p className="flex items-center gap-1">
-            <AlertTriangle className="w-4 h-4" />
-            {totalRedFlags} potential red flag{totalRedFlags !== 1 ? 's' : ''} identified
-          </p>
-        </div>
-      </div>
+	const toggleCommentBox = (sectionIndex) => {
+		setShowCommentBox((prev) => ({
+			...prev,
+			[sectionIndex]: !prev[sectionIndex],
+		}));
+	};
 
-      {/* Selected Text */}
-      {selectedText && (
-        <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
-          <h3 className="font-semibold text-green-900 mb-2">Selected Text</h3>
-          <p className="text-sm text-gray-700 mb-3 italic max-h-32 overflow-auto">
-            "{selectedText}"
-          </p>
-          <button
-            onClick={() => onCopyText(selectedText)}
-            className="w-full bg-green-600 text-white text-sm font-medium py-2 px-3 rounded hover:bg-green-700 flex items-center justify-center gap-2"
-          >
-            <Copy className="w-4 h-4" />
-            Copy Text
-          </button>
-        </div>
-      )}
+	const totalRedFlags = analysisResults.reduce(
+		(sum, result) => sum + (result.redFlags?.length || 0),
+		0,
+	);
 
-      {/* Analysis Sections */}
-      <div className="space-y-3">
-        {analysisResults.map((result, index) => (
-          <div key={index} className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden">
-            {/* Section Header */}
-            <button
-              onClick={() => toggleSection(index)}
-              className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-indigo-600" />
-                <h3 className="font-semibold text-gray-900">
-                  Page {result.sectionNumber}
-                </h3>
-                {result.redFlags && result.redFlags.length > 0 && (
-                  <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                    {result.redFlags.length} ⚠️
-                  </span>
-                )}
-              </div>
-              {expandedSections[index] ? (
-                <ChevronUp className="w-5 h-5 text-gray-400" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-gray-400" />
-              )}
-            </button>
+	return (
+		<div
+			className="w-96 space-y-4 overflow-auto bg-gray-50 rounded-lg p-4"
+			style={{ maxHeight: "85vh" }}
+		>
+			{/* Summary Card */}
+			<div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-4">
+				<h3 className="font-semibold text-indigo-900 mb-2">
+					Contract Analysis
+				</h3>
+				<div className="space-y-1 text-sm text-indigo-800">
+					<p>
+						📄 {analysisResults.length} section
+						{analysisResults.length !== 1 ? "s" : ""} analyzed
+					</p>
+					<p className="flex items-center gap-1">
+						<AlertTriangle className="w-4 h-4" />
+						{totalRedFlags} potential red flag{totalRedFlags !== 1 ? "s" : ""}{" "}
+						identified
+					</p>
+				</div>
+			</div>
 
-            {/* Expanded Content */}
-            {expandedSections[index] && (
-              <div className="p-4 pt-0 space-y-4">
-                {/* Simplified Summary */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
-                    <span className="text-blue-600">📖</span>
-                    Simple Explanation
-                  </h4>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    {result.simplified}
-                  </p>
-                </div>
+			{/* Selected Text */}
+			{selectedText && (
+				<div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+					<h3 className="font-semibold text-green-900 mb-2">Selected Text</h3>
+					<p className="text-sm text-gray-700 mb-3 italic max-h-32 overflow-auto">
+						"{selectedText}"
+					</p>
+					<button
+						onClick={() => onCopyText(selectedText)}
+						className="w-full bg-green-600 text-white text-sm font-medium py-2 px-3 rounded hover:bg-green-700 flex items-center justify-center gap-2"
+					>
+						<Copy className="w-4 h-4" />
+						Copy Text
+					</button>
+				</div>
+			)}
 
-                {/* Red Flags */}
-                {result.redFlags && result.redFlags.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-red-900 mb-2 flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-red-600" />
-                      Potential Issues
-                    </h4>
-                    <ul className="space-y-2">
-                      {result.redFlags.map((flag, flagIndex) => (
-                        <li key={flagIndex} className="text-sm text-gray-700 bg-red-50 p-2 rounded border-l-2 border-red-400">
-                          {flag}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+			{/* Analysis Sections */}
+			<div className="space-y-3">
+				{analysisResults.map((result, index) => (
+					<div
+						key={index}
+						className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden"
+					>
+						{/* Section Header */}
+						<button
+							onClick={() => toggleSection(index)}
+							className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+						>
+							<div className="flex items-center gap-2">
+								<BookOpen className="w-5 h-5 text-indigo-600" />
+								<h3 className="font-semibold text-gray-900">
+									Page {result.sectionNumber}
+								</h3>
+								{result.redFlags && result.redFlags.length > 0 && (
+									<span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">
+										{result.redFlags.length} ⚠️
+									</span>
+								)}
+							</div>
+							{expandedSections[index] ? (
+								<ChevronUp className="w-5 h-5 text-gray-400" />
+							) : (
+								<ChevronDown className="w-5 h-5 text-gray-400" />
+							)}
+						</button>
 
-                {/* Error Message */}
-                {result.error && (
-                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                    ⚠️ {result.error}
-                  </div>
-                )}
+						{/* Expanded Content */}
+						{expandedSections[index] && (
+							<div className="p-4 pt-0 space-y-4">
+								{/* Simplified Summary */}
+								<div>
+									<h4 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
+										<span className="text-blue-600">📖</span>
+										Simple Explanation
+									</h4>
+									<p className="text-sm text-gray-700 leading-relaxed">
+										{result.simplified}
+									</p>
+								</div>
 
-                {/* Feedback Section */}
-                <div className="border-t pt-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-gray-600">Was this analysis helpful?</span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleFeedback(index, 'up')}
-                        className={`p-1.5 rounded transition-colors ${
-                          feedback[index]?.rating === 'up'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600'
-                        }`}
-                        title="Helpful"
-                      >
-                        <ThumbsUp className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleFeedback(index, 'down')}
-                        className={`p-1.5 rounded transition-colors ${
-                          feedback[index]?.rating === 'down'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
-                        }`}
-                        title="Not helpful"
-                      >
-                        <ThumbsDown className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => toggleCommentBox(index)}
-                        className="p-1.5 rounded bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        title="Add comment"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+								{/* Red Flags */}
+								{result.redFlags && result.redFlags.length > 0 && (
+									<div>
+										<h4 className="font-medium text-red-900 mb-2 flex items-center gap-2">
+											<AlertTriangle className="w-4 h-4 text-red-600" />
+											Potential Issues
+										</h4>
+										<ul className="space-y-2">
+											{result.redFlags.map((flag, flagIndex) => (
+												<li
+													key={flagIndex}
+													className="text-sm text-gray-700 bg-red-50 p-2 rounded border-l-2 border-red-400"
+												>
+													{flag}
+												</li>
+											))}
+										</ul>
+									</div>
+								)}
 
-                  {/* Comment Box */}
-                  {showCommentBox[index] && (
-                    <div className="mt-2 space-y-2">
-                      <textarea
-                        value={feedback[index]?.comment || ''}
-                        onChange={(e) => setFeedback(prev => ({
-                          ...prev,
-                          [index]: { ...prev[index], comment: e.target.value }
-                        }))}
-                        placeholder="Tell us more about your experience with this analysis..."
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        rows={3}
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleCommentSubmit(index)}
-                          className="flex-1 bg-indigo-600 text-white text-xs font-medium py-1.5 px-3 rounded hover:bg-indigo-700"
-                        >
-                          Submit Feedback
-                        </button>
-                        <button
-                          onClick={() => toggleCommentBox(index)}
-                          className="flex-1 bg-gray-200 text-gray-700 text-xs font-medium py-1.5 px-3 rounded hover:bg-gray-300"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
+								{/* Error Message */}
+								{result.error && (
+									<div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+										⚠️ {result.error}
+									</div>
+								)}
 
-                  {/* Feedback confirmation */}
-                  {feedback[index]?.rating && !showCommentBox[index] && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      ✓ Thank you for your feedback!
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+								{/* Feedback Section */}
+								<div className="border-t pt-3">
+									<div className="flex items-center justify-between mb-2">
+										<span className="text-xs font-medium text-gray-600">
+											Was this analysis helpful?
+										</span>
+										<div className="flex gap-2">
+											<button
+												onClick={() => handleFeedback(index, "up")}
+												className={`p-1.5 rounded transition-colors ${
+													feedback[index]?.rating === "up"
+														? "bg-green-100 text-green-700"
+														: "bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600"
+												}`}
+												title="Helpful"
+											>
+												<ThumbsUp className="w-4 h-4" />
+											</button>
+											<button
+												onClick={() => handleFeedback(index, "down")}
+												className={`p-1.5 rounded transition-colors ${
+													feedback[index]?.rating === "down"
+														? "bg-red-100 text-red-700"
+														: "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600"
+												}`}
+												title="Not helpful"
+											>
+												<ThumbsDown className="w-4 h-4" />
+											</button>
+											<button
+												onClick={() => toggleCommentBox(index)}
+												className="p-1.5 rounded bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+												title="Add comment"
+											>
+												<MessageSquare className="w-4 h-4" />
+											</button>
+										</div>
+									</div>
 
-      {/* Consult Lawyer CTA */}
-      {totalRedFlags > 0 && (
-        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
-          <h3 className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
-            Found Concerning Items?
-          </h3>
-          <p className="text-sm text-yellow-800 mb-3">
-            We identified {totalRedFlags} potential issue{totalRedFlags !== 1 ? 's' : ''} that may need legal review.
-          </p>
-          <button
-            onClick={onConsultLawyer}
-            className="w-full bg-yellow-600 text-white text-sm font-medium py-2 px-3 rounded hover:bg-yellow-700 flex items-center justify-center gap-2"
-          >
-            <ExternalLink className="w-4 h-4" />
-            Connect with a Lawyer
-          </button>
-        </div>
-      )}
-    </div>
-  );
+									{/* Comment Box */}
+									{showCommentBox[index] && (
+										<div className="mt-2 space-y-2">
+											<textarea
+												value={feedback[index]?.comment || ""}
+												onChange={(e) =>
+													setFeedback((prev) => ({
+														...prev,
+														[index]: {
+															...prev[index],
+															comment: e.target.value,
+														},
+													}))
+												}
+												placeholder="Tell us more about your experience with this analysis..."
+												className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+												rows={3}
+											/>
+											<div className="flex gap-2">
+												<button
+													onClick={() => handleCommentSubmit(index)}
+													className="flex-1 bg-indigo-600 text-white text-xs font-medium py-1.5 px-3 rounded hover:bg-indigo-700"
+												>
+													Submit Feedback
+												</button>
+												<button
+													onClick={() => toggleCommentBox(index)}
+													className="flex-1 bg-gray-200 text-gray-700 text-xs font-medium py-1.5 px-3 rounded hover:bg-gray-300"
+												>
+													Cancel
+												</button>
+											</div>
+										</div>
+									)}
+
+									{/* Feedback confirmation */}
+									{feedback[index]?.rating && !showCommentBox[index] && (
+										<p className="text-xs text-gray-500 mt-1">
+											✓ Thank you for your feedback!
+										</p>
+									)}
+								</div>
+							</div>
+						)}
+					</div>
+				))}
+			</div>
+
+			{/* Consult Lawyer CTA */}
+			{totalRedFlags > 0 && (
+				<div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+					<h3 className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
+						<AlertTriangle className="w-5 h-5" />
+						Found Concerning Items?
+					</h3>
+					<p className="text-sm text-yellow-800 mb-3">
+						We identified {totalRedFlags} potential issue
+						{totalRedFlags !== 1 ? "s" : ""} that may need legal review.
+					</p>
+					<button
+						onClick={onConsultLawyer}
+						className="w-full bg-yellow-600 text-white text-sm font-medium py-2 px-3 rounded hover:bg-yellow-700 flex items-center justify-center gap-2"
+					>
+						<ExternalLink className="w-4 h-4" />
+						Connect with a Lawyer
+					</button>
+				</div>
+			)}
+		</div>
+	);
 };
 
 export default AnalysisSidebar;

@@ -25,4 +25,4 @@ jobs:
         run: npm install --prefix contract-analyzer/backend
 
       - name: Lint
-        run: npm run lint --prefix contract-analyzer
+        run: npx biome lint . --prefix contract-analyzer
