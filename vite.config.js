@@ -3,6 +3,9 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
 	plugins: [react()],
+	server: {
+		host: true,
+	},
 	optimizeDeps: {
 		include: ["pdfjs-dist"],
 	},
