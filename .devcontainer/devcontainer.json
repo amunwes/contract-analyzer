@@ -9,7 +9,7 @@
     }
   },
 
-  "postCreateCommand": "npm install --prefix contract-analyzer && npm install --prefix contract-analyzer/backend && npm install -g @anthropic-ai/claude-code",
+  "postCreateCommand": "npm install && npm install --prefix backend && npm install -g @anthropic-ai/claude-code",
 
   "forwardPorts": [5173, 3001],
   "portsAttributes": {
@@ -30,6 +30,7 @@
         "bradlc.vscode-tailwindcss",
         "ms-vscode.vscode-typescript-next",
         "formulahendry.auto-rename-tag",
+        "anthropic.claude-code",
         "christian-kohler.path-intellisense"
       ],
       "settings": {
