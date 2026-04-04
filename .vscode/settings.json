@@ -1,6 +1,6 @@
 {
-  "editor.defaultFormatter": "biomejs.biome",
-  "editor.formatOnSave": true,
-  "js/ts.tsserver.experimental.enableProjectDiagnostics": false,
-  "biome.lspBin": "./node_modules/@biomejs/biome/bin/biome"
+	"editor.defaultFormatter": "biomejs.biome",
+	"editor.formatOnSave": true,
+	"js/ts.tsserver.experimental.enableProjectDiagnostics": false,
+	"biome.lspBin": "./node_modules/@biomejs/biome/bin/biome"
 }

@@ -6,7 +6,10 @@
       "Bash(rmdir /workspaces/contract-analyzer/contract-analyzer)",
       "Bash(sudo mv:*)",
       "Bash(sudo rmdir:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
