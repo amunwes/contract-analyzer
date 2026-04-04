@@ -1,47 +1,49 @@
 {
-  "name": "Contract Analyzer",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+	"name": "Contract Analyzer",
+	"image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
 
-  "features": {
-    "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "22"
-    }
-  },
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "22"
+		}
+	},
 
-  "postCreateCommand": "npm install && npm install --prefix backend && npm install -g @anthropic-ai/claude-code",
+	"postCreateCommand": "npm install && npm install --prefix backend && npm install -g @anthropic-ai/claude-code",
+	"postStartCommand": "sudo chown node:node /home/node/.claude",
 
-  "forwardPorts": [5173, 3001],
-  "portsAttributes": {
-    "5173": {
-      "label": "Vite Dev Server",
-      "onAutoForward": "notify"
-    },
-    "3001": {
-      "label": "Express Backend",
-      "onAutoForward": "notify"
-    }
-  },
+	"forwardPorts": [5173, 3001],
+	"portsAttributes": {
+		"5173": {
+			"label": "Vite Dev Server",
+			"onAutoForward": "notify"
+		},
+		"3001": {
+			"label": "Express Backend",
+			"onAutoForward": "notify"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"biomejs.biome",
+				"bradlc.vscode-tailwindcss",
+				"ms-vscode.vscode-typescript-next",
+				"formulahendry.auto-rename-tag",
+				"anthropic.claude-code",
+				"christian-kohler.path-intellisense"
+			],
+			"settings": {
+				"editor.defaultFormatter": "biomejs.biome",
+				"editor.formatOnSave": true,
+				"js/ts.tsserver.experimental.enableProjectDiagnostics": false
+			}
+		}
+	},
 
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "biomejs.biome",
-        "bradlc.vscode-tailwindcss",
-        "ms-vscode.vscode-typescript-next",
-        "formulahendry.auto-rename-tag",
-        "anthropic.claude-code",
-        "christian-kohler.path-intellisense"
-      ],
-      "settings": {
-        "editor.defaultFormatter": "biomejs.biome",
-        "editor.formatOnSave": true,
-        "js/ts.tsserver.experimental.enableProjectDiagnostics": false
-      }
-    }
-  },
+	"mounts": ["source=claude-auth,target=/home/node/.claude,type=volume"],
 
-  "remoteEnv": {
-    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}"
-  }
+	"remoteEnv": {
+		"ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}"
+	}
 }
