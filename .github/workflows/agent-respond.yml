@@ -1,0 +1,75 @@
+name: Agent — respond
+
+# Fires on any human comment on an agent-labeled issue.
+# Claude reads the full conversation history and decides what to do:
+#   - If the comment is feedback/questions → revise the plan and re-post
+#   - If the comment contains "approved"   → implement the plan and open a PR
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  respond:
+    if: |
+      github.event.issue.pull_request == null &&
+      contains(github.event.issue.labels.*.name, 'agent') &&
+      github.event.comment.user.login != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: |
+            contract-analyzer/package-lock.json
+            contract-analyzer/backend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm install --prefix contract-analyzer
+          npm install --prefix contract-analyzer/backend
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowedTools "Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh repo view:*),Bash(git checkout:*),Bash(git push:*),Bash(git add:*),Bash(git commit:*),Bash(git branch:*),Bash(git status:*),Bash(git diff:*),Bash(npm run:*),Read,Write,Edit,LS"'
+          prompt: |
+            You are the lead agent for this repository. Read .claude/CLAUDE.md first before doing anything else.
+
+            A human has commented on issue #${{ github.event.issue.number }}, which you are managing.
+
+            Issue title: ${{ github.event.issue.title }}
+
+            First, fetch the full issue and comment history to understand the conversation so far:
+              gh issue view ${{ github.event.issue.number }} --comments --repo ${{ github.repository }}
+
+            The latest comment from the human is:
+            "${{ github.event.comment.body }}"
+
+            Now decide what to do:
+
+            **If the comment is feedback, a question, or a revision request** (i.e. the human is not yet approving):
+            - Revise your plan to address the feedback
+            - Post the updated plan as a new comment on issue #${{ github.event.issue.number }} using the format in .claude/commands/plan-issue.md
+            - Stop. Do not write any code.
+
+            **If the comment contains "approved"** (the human is approving the plan):
+            - Follow Steps 3 and 4 of the lead agent workflow in CLAUDE.md
+            - Create a feature branch with the naming convention from CLAUDE.md
+            - Implement the approved plan, delegating to subagents per domain
+            - Run `npm run check` from `contract-analyzer/` — fix any errors before continuing
+            - Open a PR using the format in .claude/commands/open-pr.md, linked to issue #${{ github.event.issue.number }}
+            - Post a comment on issue #${{ github.event.issue.number }} with the PR link
+          github_token: ${{ secrets.GITHUB_TOKEN }}
