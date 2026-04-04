@@ -7,17 +7,14 @@ on:
     types: [created]
 
 jobs:
-  # Triggered when 'agent' label is added to an issue
-  # Lead agent reads the issue, posts a plan, and waits
+  # Step 1 & 2: Triggered when 'agent' label is added — reads issue, posts plan, stops
   plan:
     if: github.event_name == 'issues' && github.event.label.name == 'agent'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
       issues: write
       id-token: write
-      actions: read
 
     steps:
       - uses: actions/checkout@v4
@@ -25,29 +22,69 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: '--allowedTools "Bash(gh issue:*),Bash(gh repo:*),Read,LS"'
+          claude_args: '--allowedTools "Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh repo view:*),Read,LS"'
           prompt: |
-            You are the lead agent for this repository. Your behaviour is defined in .claude/CLAUDE.md — read it first before doing anything else.
+            You are the lead agent for this repository. Read .claude/CLAUDE.md first before doing anything else.
 
-            You have been triggered by the 'agent' label being added to issue #${{ github.event.issue.number }}.
+            The 'agent' label was just added to issue #${{ github.event.issue.number }}.
 
             Issue title: ${{ github.event.issue.title }}
 
             Issue body:
             ${{ github.event.issue.body }}
 
-            Follow the lead agent workflow defined in CLAUDE.md exactly:
-            1. Read and understand the issue
+            Follow Steps 1 and 2 of the lead agent workflow defined in CLAUDE.md:
+            1. Read and understand the issue. Explore the relevant parts of the codebase.
             2. Post a plan as a comment on issue #${{ github.event.issue.number }} using the format in .claude/commands/plan-issue.md
             3. Stop. Do not write any code. Wait for a human to reply "approved".
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-  # Triggered when a human comments "approved" on an issue
-  # Lead agent proceeds to delegate to subagents and open a PR
+  # Feedback loop: Triggered when a human leaves feedback (not "approved") on an agent-labeled issue
+  # Claude revises the plan and re-posts it, then waits again
+  revise:
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request == null &&
+      contains(github.event.issue.labels.*.name, 'agent') &&
+      !contains(github.event.comment.body, 'approved') &&
+      github.event.comment.user.login != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowedTools "Bash(gh issue view:*),Bash(gh issue comment:*),Read,LS"'
+          prompt: |
+            You are the lead agent for this repository. Read .claude/CLAUDE.md first before doing anything else.
+
+            A human has left feedback on your plan for issue #${{ github.event.issue.number }}.
+
+            Issue title: ${{ github.event.issue.title }}
+
+            First, fetch the full issue comment history to review the conversation so far:
+              gh issue view ${{ github.event.issue.number }} --comments --repo ${{ github.repository }}
+
+            The latest comment from the human is:
+            "${{ github.event.comment.body }}"
+
+            Review the feedback, revise your plan accordingly, and post an updated plan comment on issue #${{ github.event.issue.number }} using the format in .claude/commands/plan-issue.md.
+            Do not write any code. Wait for the human to reply "approved".
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Step 3 & 4: Triggered when a human comments "approved" on an agent-labeled issue
+  # Claude creates the branch, implements the plan, opens the PR
   implement:
     if: |
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request == null &&
+      contains(github.event.issue.labels.*.name, 'agent') &&
       contains(github.event.comment.body, 'approved') &&
       github.event.comment.user.login != 'github-actions[bot]'
     runs-on: ubuntu-latest
@@ -60,22 +97,39 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: |
+            contract-analyzer/package-lock.json
+            contract-analyzer/backend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm install --prefix contract-analyzer
+          npm install --prefix contract-analyzer/backend
 
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: '--allowedTools "Bash(gh issue:*),Bash(gh pr:*),Bash(gh repo:*),Bash(git:*),Bash(npm:*),Read,Write,Edit,LS"'
+          claude_args: '--allowedTools "Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh repo view:*),Bash(git checkout:*),Bash(git push:*),Bash(git add:*),Bash(git commit:*),Bash(git branch:*),Bash(git status:*),Bash(git diff:*),Bash(npm run:*),Read,Write,Edit,LS"'
           prompt: |
-            You are the lead agent for this repository. Your behaviour is defined in .claude/CLAUDE.md — read it first before doing anything else.
+            You are the lead agent for this repository. Read .claude/CLAUDE.md first before doing anything else.
 
-            A human has approved your plan on issue #${{ github.event.issue.number }} with the comment: "${{ github.event.comment.body }}"
+            A human has approved your plan for issue #${{ github.event.issue.number }}.
 
             Issue title: ${{ github.event.issue.title }}
 
-            Issue body:
-            ${{ github.event.issue.body }}
+            First, fetch the full issue comment history to see the approved plan:
+              gh issue view ${{ github.event.issue.number }} --comments --repo ${{ github.repository }}
 
-            The plan has been approved. Now follow Steps 3 and 4 of the lead agent workflow in CLAUDE.md:
-            3. Delegate implementation tasks to subagents using the context files in .claude/agents/
-            4. Once complete, open a PR using the format in .claude/commands/open-pr.md and post a comment on issue #${{ github.event.issue.number }} with the PR link
+            Dependencies are already installed. Now follow Steps 3 and 4 of the lead agent workflow in CLAUDE.md:
+            3. Create a feature branch following the naming convention in CLAUDE.md, then implement the approved plan. Dispatch subagent tasks as described — each subagent should only touch files in its domain.
+            4. When implementation is complete, run `npm run check` from `contract-analyzer/` and fix any errors.
+            5. Open a PR using the format in .claude/commands/open-pr.md. Link it to issue #${{ github.event.issue.number }}.
+            6. Post a comment on issue #${{ github.event.issue.number }} with the PR link.
           github_token: ${{ secrets.GITHUB_TOKEN }}
