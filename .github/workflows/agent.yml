@@ -3,40 +3,71 @@ name: Agent workflow
 on:
   issues:
     types: [labeled]
+  issue_comment:
+    types: [created]
 
 jobs:
-  run-agent:
-    if: github.event.label.name == 'agent'
+  # Triggered when 'agent' label is added to an issue
+  # Lead agent reads the issue, posts a plan, and waits
+  plan:
+    if: github.event_name == 'issues' && github.event.label.name == 'agent'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: anthropics/claude-code-action@v1
         with:
-          node-version: 22
-          cache: "npm"
-          cache-dependency-path: |
-            contract-analyzer/package-lock.json
-            contract-analyzer/backend/package-lock.json
+          prompt: |
+            You are the lead agent for this repository. Your behaviour is defined in .claude/CLAUDE.md — read it first before doing anything else.
 
-      - name: Install frontend deps
-        run: npm install --prefix contract-analyzer
+            You have been triggered by the 'agent' label being added to issue #${{ github.event.issue.number }}.
 
-      - name: Install backend deps
-        run: npm install --prefix contract-analyzer/backend
+            Issue title: ${{ github.event.issue.title }}
 
-      - name: Install Claude Code
-        run: npm install -g @anthropic-ai/claude-code
+            Issue body:
+            ${{ github.event.issue.body }}
 
-      - name: Install Python deps
-        run: pip install metagpt
+            Follow the lead agent workflow defined in CLAUDE.md exactly:
+            1. Read and understand the issue
+            2. Post a plan as a comment on issue #${{ github.event.issue.number }} using the format in .claude/commands/plan-issue.md
+            3. Stop. Do not write any code. Wait for a human to reply "approved".
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run orchestrator
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
-        run: python scripts/orchestrator.py
+  # Triggered when a human comments "approved" on an issue
+  # Lead agent proceeds to delegate to subagents and open a PR
+  implement:
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request == null &&
+      contains(github.event.comment.body, 'approved') &&
+      github.event.comment.user.login != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          prompt: |
+            You are the lead agent for this repository. Your behaviour is defined in .claude/CLAUDE.md — read it first before doing anything else.
+
+            A human has approved your plan on issue #${{ github.event.issue.number }} with the comment: "${{ github.event.comment.body }}"
+
+            Issue title: ${{ github.event.issue.title }}
+
+            Issue body:
+            ${{ github.event.issue.body }}
+
+            The plan has been approved. Now follow Steps 3 and 4 of the lead agent workflow in CLAUDE.md:
+            3. Delegate implementation tasks to subagents using the context files in .claude/agents/
+            4. Once complete, open a PR using the format in .claude/commands/open-pr.md and post a comment on issue #${{ github.event.issue.number }} with the PR link
+          github_token: ${{ secrets.GITHUB_TOKEN }}
