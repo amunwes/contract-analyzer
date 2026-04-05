@@ -6,16 +6,18 @@ A contract analysis web app with a Vite/React/TypeScript/Tailwind frontend (port
 
 **Repo structure:**
 ```
-contract-analyzer/
-├── src/              ← React frontend
-├── backend/
-│   └── server.js     ← Express backend
-├── biome.json        ← linting + formatting (not ESLint/Prettier)
-└── package.json
-.claude/
-├── CLAUDE.md         ← this file
-├── commands/         ← slash commands
-└── agents/           ← subagent context files
+repo-root/
+├── frontend/         ← Vite/React/TypeScript app
+│   ├── src/
+│   ├── biome.json    ← linting + formatting (not ESLint/Prettier)
+│   └── package.json
+├── backend/          ← Express server
+│   ├── server.js
+│   └── package.json
+└── .claude/
+    ├── CLAUDE.md     ← this file
+    ├── commands/     ← slash commands
+    └── agents/       ← subagent context files
 ```
 
 ---
@@ -24,7 +26,7 @@ contract-analyzer/
 
 - **Never push directly to main.** Always work on a feature branch.
 - **Branch naming:** `feature/issue-{number}-{short-slug}` (e.g. `feature/issue-12-upload-button`)
-- **Linting:** Run `npm run check` from `contract-analyzer/` before opening any PR. Fix all errors. Do not open a PR with lint failures.
+- **Linting:** Run `npm run check --prefix frontend` from the repo root before opening any PR. Fix all errors. Do not open a PR with lint failures.
 - **One PR per issue.** Do not bundle unrelated changes.
 - **No commented-out code.** Remove it.
 - **No `any` types** in TypeScript without an explicit comment explaining why.
@@ -33,7 +35,7 @@ contract-analyzer/
 
 ## Tech Conventions
 
-- **Linting/formatting:** Biome v2. Run `npm run check` to lint + format + sort imports.
+- **Linting/formatting:** Biome v2. Run `npm run check --prefix frontend` from the repo root to lint + format + sort imports.
 - **Frontend:** React with TypeScript. Tailwind for styling. Vite for bundling.
 - **Backend:** Express. Plain JavaScript (`server.js`). Keep routes thin — logic in separate modules if it grows.
 - **No new dependencies** without a clear reason. Prefer what's already installed.
@@ -64,7 +66,7 @@ Each subagent receives:
 
 ### Step 4 — Open the PR
 After subagent work is complete:
-- Run `npm run check` — fix anything that fails
+- Run `npm run check --prefix frontend` from the repo root — fix anything that fails
 - Open a PR using the format in `.claude/commands/open-pr.md`
 - Link the PR to the original issue (`Closes #N`)
 - Post a comment on the issue with the PR link
@@ -75,9 +77,9 @@ After subagent work is complete:
 
 | Agent | Context file | Owns |
 |---|---|---|
-| Frontend | `.claude/agents/frontend.md` | `src/` — React components, Tailwind, TypeScript |
+| Frontend | `.claude/agents/frontend.md` | `frontend/src/` — React components, Tailwind, TypeScript |
 | Backend | `.claude/agents/backend.md` | `backend/` — Express routes, middleware, server logic |
-| Tester | `.claude/agents/tester.md` | Test files — unit and integration tests |
+| Tester | `.claude/agents/tester.md` | `frontend/test/` — unit and integration tests |
 
 A subagent should only touch files within its domain. If a task requires changes across domains, split it into separate subagent tasks.
 

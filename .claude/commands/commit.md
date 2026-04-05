@@ -17,7 +17,7 @@ Examples of when to commit:
 
 Before committing, confirm all of the following:
 
-- [ ] `npm run check` passes with zero errors from `contract-analyzer/`
+- [ ] `npm run check --prefix frontend` passes with zero errors from the repo root
 - [ ] No `console.log` debug statements in the changed files
 - [ ] No commented-out code in the changed files
 - [ ] No unintended files staged (check `git diff --staged` first)

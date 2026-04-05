@@ -15,14 +15,14 @@ jobs:
           node-version: 22
           cache: "npm"
           cache-dependency-path: |
-            contract-analyzer/package-lock.json
-            contract-analyzer/backend/package-lock.json
+            frontend/package-lock.json
+            backend/package-lock.json
 
       - name: Install frontend deps
-        run: npm install --prefix contract-analyzer
+        run: npm install --prefix frontend
 
       - name: Install backend deps
-        run: npm install --prefix contract-analyzer/backend
+        run: npm install --prefix backend
 
       - name: Lint
-        run: npx biome lint . --prefix contract-analyzer
+        run: npm run check --prefix frontend

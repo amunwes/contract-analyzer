@@ -6,7 +6,7 @@ Open a pull request after subagent work is complete and lint passes.
 
 Before opening the PR, confirm all of the following:
 
-- [ ] `npm run check` passes with zero errors from `contract-analyzer/`
+- [ ] `npm run check --prefix frontend` passes with zero errors from the repo root
 - [ ] No `console.log` debug statements left in
 - [ ] No commented-out code
 - [ ] No `.only` in any test files
