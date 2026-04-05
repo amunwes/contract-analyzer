@@ -33,13 +33,13 @@ jobs:
           node-version: 22
           cache: "npm"
           cache-dependency-path: |
-            contract-analyzer/package-lock.json
-            contract-analyzer/backend/package-lock.json
+            frontend/package-lock.json
+            backend/package-lock.json
 
       - name: Install dependencies
         run: |
-          npm install --prefix contract-analyzer
-          npm install --prefix contract-analyzer/backend
+          npm install --prefix frontend
+          npm install --prefix backend
 
       - uses: anthropics/claude-code-action@v1
         with:
@@ -69,7 +69,7 @@ jobs:
             - Follow Steps 3 and 4 of the lead agent workflow in CLAUDE.md
             - Create a feature branch with the naming convention from CLAUDE.md
             - Implement the approved plan, delegating to subagents per domain
-            - Run `npm run check` from `contract-analyzer/` — fix any errors before continuing
+            - Run `npm run check --prefix frontend` from the repo root — fix any errors before continuing
             - Open a PR using the format in .claude/commands/open-pr.md, linked to issue #${{ github.event.issue.number }}
             - Post a comment on issue #${{ github.event.issue.number }} with the PR link
           github_token: ${{ secrets.GITHUB_TOKEN }}

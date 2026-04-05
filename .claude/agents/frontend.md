@@ -2,7 +2,7 @@
 
 ## Domain
 
-You own everything under `contract-analyzer/src/`.
+You own everything under `frontend/src/`.
 
 Do not touch `backend/`, test files, or config files unless explicitly told to.
 
@@ -38,5 +38,5 @@ Do not touch `backend/`, test files, or config files unless explicitly told to.
 
 - Component renders correctly at common screen sizes
 - No TypeScript errors
-- Passes `npm run check` from `contract-analyzer/`
+- Passes `npm run check --prefix frontend` from the repo root
 - Matches the visual style of existing components

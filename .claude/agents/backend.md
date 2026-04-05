@@ -2,7 +2,7 @@
 
 ## Domain
 
-You own everything under `contract-analyzer/backend/`.
+You own everything under `backend/`.
 
 Do not touch `src/`, test files, or config files unless explicitly told to.
 
@@ -16,7 +16,7 @@ Do not touch `src/`, test files, or config files unless explicitly told to.
 
 ### Routes
 - Keep route handlers thin — extract logic into separate modules if a handler exceeds ~30 lines
-- New modules go in `backend/` alongside `server.js` (e.g. `backend/contracts.js`)
+- New modules go alongside `server.js` (e.g. `backend/contracts.js`)
 - Use clear, RESTful route naming: `GET /api/contracts`, `POST /api/contracts/:id/analyse`
 
 ### Error handling
@@ -37,5 +37,5 @@ Do not touch `src/`, test files, or config files unless explicitly told to.
 - Endpoint returns correct responses and status codes
 - Error cases are handled and return JSON
 - No `console.log` left in (use proper error handling instead)
-- Passes `npm run check` from `contract-analyzer/`
+- Passes `npm run check --prefix frontend` from the repo root
 - New routes are documented in the PR description
