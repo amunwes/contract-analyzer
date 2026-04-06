@@ -36,7 +36,8 @@
 			"settings": {
 				"editor.defaultFormatter": "biomejs.biome",
 				"editor.formatOnSave": true,
-				"js/ts.tsserver.experimental.enableProjectDiagnostics": false
+				"js/ts.tsserver.experimental.enableProjectDiagnostics": false,
+				"remote.autoForwardPorts": false
 			}
 		}
 	},
