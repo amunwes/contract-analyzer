@@ -1,6 +1,12 @@
 # Contract Analyzer
 
-Contract Analyzer is a web app that helps everyday people understand employment contracts. Upload a PDF, click on any section, and get a plain-English explanation along with a list of potential red flags — powered by Claude (Anthropic AI). There is also a lawyer contact form for BC residents who need professional legal advice.
+## What is Contract Analyzer?
+
+Contract Analyzer is a free tool that helps everyday people understand the employment contracts they've been asked to sign. Legal documents can be confusing and full of jargon — this app breaks them down into plain language so you know exactly what you're agreeing to.
+
+Upload your contract as a PDF, click on any section, and instantly get a simple explanation of what it means along with a list of things to watch out for. If you're in BC and need professional legal advice, there's also a built-in form to contact a lawyer directly.
+
+**No legal background required. Just upload and ask.**
 
 ## Features
 
