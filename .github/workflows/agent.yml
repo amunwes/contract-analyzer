@@ -34,4 +34,3 @@ jobs:
             1. Read and understand the issue. Explore the relevant parts of the codebase.
             2. Post a plan as a comment on issue #${{ github.event.issue.number }} using the format in .claude/commands/plan-issue.md
             3. Stop. Do not write any code.
-          github_token: ${{ secrets.GITHUB_TOKEN }}
