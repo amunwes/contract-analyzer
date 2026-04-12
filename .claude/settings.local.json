@@ -12,7 +12,12 @@
       "Bash(git commit:*)",
       "Bash(git -C /workspaces/contract-analyzer add -A)",
       "Bash(git -C /workspaces/contract-analyzer status)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(node:*)",
+      "Bash(sqlite3 backend/data/contract_analyzer.db \".tables\")",
+      "Bash(sqlite3 backend/data/contract_analyzer.db \".schema lawyer_inquiries\")",
+      "Bash(kill %1)",
+      "Bash(npm test:*)"
     ]
   }
 }
