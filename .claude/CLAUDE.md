@@ -7,17 +7,26 @@ A contract analysis web app with a Vite/React/TypeScript/Tailwind frontend (port
 **Repo structure:**
 ```
 repo-root/
-├── frontend/         ← Vite/React/TypeScript app
+├── frontend/               ← Vite/React/TypeScript app
 │   ├── src/
-│   ├── biome.json    ← linting + formatting (not ESLint/Prettier)
+│   ├── biome.json          ← linting + formatting (not ESLint/Prettier)
 │   └── package.json
-├── backend/          ← Express server
+├── backend/                ← Express server
 │   ├── server.js
-│   └── package.json
+│   ├── package.json
+│   ├── .env.local.example  ← env var template (copy to .env.local)
+│   ├── db/
+│   │   ├── index.js        ← Knex singleton (import this for DB access)
+│   │   ├── knexfile.js     ← Knex config (SQLite dev, creates data/ if missing)
+│   │   ├── migrations/     ← versioned schema migrations (001_create_initial_tables.js)
+│   │   └── queries.js      ← named query helpers (add new queries here)
+│   ├── scripts/
+│   │   └── smoke-test.js   ← DB smoke tests (runs against in-memory SQLite)
+│   └── data/               ← gitignored — SQLite DB file lives here at runtime
 └── .claude/
-    ├── CLAUDE.md     ← this file
-    ├── commands/     ← slash commands
-    └── agents/       ← subagent context files
+    ├── CLAUDE.md           ← this file
+    ├── commands/           ← slash commands
+    └── agents/             ← subagent context files
 ```
 
 ---
@@ -38,6 +47,9 @@ repo-root/
 - **Linting/formatting:** Biome v2. Run `npm run check --prefix frontend` from the repo root to lint + format + sort imports.
 - **Frontend:** React with TypeScript. Tailwind for styling. Vite for bundling.
 - **Backend:** Express. Plain JavaScript (`server.js`). Keep routes thin — logic in separate modules if it grows.
+- **Database:** SQLite (dev) via Knex. All DB access goes through `backend/db/queries.js`. New query helpers belong there, not inline in routes.
+- **Migrations:** Add new migration files to `backend/db/migrations/` using sequential numbering (`002_`, `003_`, …). Never edit a migration that has already been committed — add a new one instead.
+- **Tests:** Run `npm test` from `backend/` to execute the DB smoke tests. Tests use an in-memory SQLite DB and must not touch `backend/data/`.
 - **No new dependencies** without a clear reason. Prefer what's already installed.
 
 ---
@@ -67,6 +79,7 @@ Each subagent receives:
 ### Step 4 — Open the PR
 After subagent work is complete:
 - Run `npm run check --prefix frontend` from the repo root — fix anything that fails
+- If backend DB/query changes were made, run `npm test` from `backend/` — fix anything that fails
 - Open a PR using the format in `.claude/commands/open-pr.md`
 - Link the PR to the original issue (`Closes #N`)
 - Post a comment on the issue with the PR link
@@ -78,7 +91,7 @@ After subagent work is complete:
 | Agent | Context file | Owns |
 |---|---|---|
 | Frontend | `.claude/agents/frontend.md` | `frontend/src/` — React components, Tailwind, TypeScript |
-| Backend | `.claude/agents/backend.md` | `backend/` — Express routes, middleware, server logic |
+| Backend | `.claude/agents/backend.md` | `backend/` — Express routes, middleware, server logic, DB queries |
 | Tester | `.claude/agents/tester.md` | `frontend/test/` — unit and integration tests |
 
 A subagent should only touch files within its domain. If a task requires changes across domains, split it into separate subagent tasks.
