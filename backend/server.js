@@ -4,8 +4,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import db from "./db/index.js";
 
 dotenv.config();
+
+db.raw('SELECT 1')
+  .then(() => console.log('Database connection established'))
+  .catch((err) => console.warn('Database not initialized — run npm run db:init:', err.message));
 
 const app = express();
 const PORT = 3001;

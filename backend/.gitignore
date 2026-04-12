@@ -1,0 +1,6 @@
+# SQLite database
+data/
+*.db
+
+# Local env overrides
+.env.local
