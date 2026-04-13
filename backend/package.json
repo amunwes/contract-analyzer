@@ -6,12 +6,19 @@
 	"main": "server.js",
 	"scripts": {
 		"start": "node server.js",
-		"dev": "node --watch server.js"
+		"dev": "node --watch server.js",
+		"db:init": "node -e \"import('./db/index.js').then(m => m.default.migrate.latest()).then(() => { console.log('DB initialized'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); })\"",
+		"db:migrate": "node -e \"import('./db/index.js').then(m => m.default.migrate.latest()).then(() => { console.log('Migrations applied'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); })\"",
+		"db:rollback": "node -e \"import('./db/index.js').then(m => m.default.migrate.rollback()).then(() => { console.log('Rolled back'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); })\"",
+		"test": "node scripts/smoke-test.js"
 	},
 	"dependencies": {
 		"@anthropic-ai/sdk": "^0.32.1",
 		"cors": "^2.8.5",
 		"dotenv": "^16.4.5",
-		"express": "^4.21.2"
+		"express": "^4.21.2",
+		"knex": "^3.1.0",
+		"sqlite3": "^5.1.7",
+		"uuid": "^11.0.0"
 	}
 }
