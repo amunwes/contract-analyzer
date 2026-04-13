@@ -43,7 +43,7 @@ Check the current branch matches the plan's intended branch:
 git branch --show-current
 ```
 
-If on `main`, create and switch to the correct feature branch before touching any files:
+If on `main` or `develop`, create and switch to the correct feature branch before touching any files:
 
 ```bash
 git checkout -b feature/issue-{N}-{slug}
