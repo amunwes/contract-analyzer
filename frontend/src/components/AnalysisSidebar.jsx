@@ -9,7 +9,7 @@ import {
 	ThumbsDown,
 	ThumbsUp,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const AnalysisSidebar = ({
 	analysisResults,
@@ -17,11 +17,16 @@ const AnalysisSidebar = ({
 	onCopyText,
 	onConsultLawyer,
 }) => {
-	const [expandedSections, setExpandedSections] = useState(
-		analysisResults.map((_, i) => i === 0), // Only first section expanded by default
-	);
-	const [feedback, setFeedback] = useState({}); // { sectionIndex: { rating: 'up'|'down', comment: '' } }
-	const [showCommentBox, setShowCommentBox] = useState({}); // { sectionIndex: boolean }
+	const {
+		sections = [],
+		overallScore,
+		riskLevel,
+		topConcerns = [],
+	} = analysisResults;
+
+	const [expandedSections, setExpandedSections] = useState({});
+	const [feedback, setFeedback] = useState({});
+	const [showCommentBox, setShowCommentBox] = useState({});
 	const [_overallFeedback, _setOverallFeedback] = useState({
 		rating: null,
 		comment: "",
@@ -29,12 +34,14 @@ const AnalysisSidebar = ({
 	});
 	const [_showOverallComment, _setShowOverallComment] = useState(false);
 
+	useEffect(() => {
+		if (sections.length === 1) {
+			setExpandedSections({ 0: true });
+		}
+	}, [sections.length]);
+
 	const toggleSection = (index) => {
-		setExpandedSections((prev) => {
-			const newExpanded = [...prev];
-			newExpanded[index] = !newExpanded[index];
-			return newExpanded;
-		});
+		setExpandedSections((prev) => ({ ...prev, [index]: !prev[index] }));
 	};
 
 	const handleFeedback = (sectionIndex, rating) => {
@@ -42,31 +49,13 @@ const AnalysisSidebar = ({
 			...prev,
 			[sectionIndex]: { ...prev[sectionIndex], rating },
 		}));
-
-		// Log feedback (you can replace this with an API call later)
-		console.log("Feedback submitted:", {
-			page: analysisResults[sectionIndex].sectionNumber,
-			rating,
-			timestamp: new Date().toISOString(),
-		});
 	};
 
 	const handleCommentSubmit = (sectionIndex) => {
 		const comment = feedback[sectionIndex]?.comment;
 		if (!comment?.trim()) return;
 
-		// Log feedback with comment (you can replace this with an API call later)
-		console.log("Feedback with comment submitted:", {
-			page: analysisResults[sectionIndex].sectionNumber,
-			rating: feedback[sectionIndex]?.rating,
-			comment: comment,
-			timestamp: new Date().toISOString(),
-		});
-
-		// Hide comment box after submission
 		setShowCommentBox((prev) => ({ ...prev, [sectionIndex]: false }));
-
-		// Show confirmation
 		alert("Thank you for your feedback!");
 	};
 
@@ -77,8 +66,8 @@ const AnalysisSidebar = ({
 		}));
 	};
 
-	const totalRedFlags = analysisResults.reduce(
-		(sum, result) => sum + (result.redFlags?.length || 0),
+	const totalRedFlags = sections.reduce(
+		(sum, section) => sum + (section.redFlags?.length || 0),
 		0,
 	);
 
@@ -94,8 +83,8 @@ const AnalysisSidebar = ({
 				</h3>
 				<div className="space-y-1 text-sm text-indigo-800">
 					<p>
-						📄 {analysisResults.length} section
-						{analysisResults.length !== 1 ? "s" : ""} analyzed
+						📄 {sections.length} section{sections.length !== 1 ? "s" : ""}{" "}
+						analyzed
 					</p>
 					<p className="flex items-center gap-1">
 						<AlertTriangle className="w-4 h-4" />
@@ -104,6 +93,60 @@ const AnalysisSidebar = ({
 					</p>
 				</div>
 			</div>
+
+			{/* Overall Score Card */}
+			{overallScore !== null && (
+				<div className="bg-white border-2 border-gray-200 rounded-lg p-4">
+					<h3 className="font-semibold text-gray-900 mb-3">
+						Overall Assessment
+					</h3>
+					<div className="flex items-center gap-3 mb-3">
+						<span
+							className={`text-2xl font-bold ${
+								riskLevel === "low"
+									? "text-green-600"
+									: riskLevel === "moderate"
+										? "text-yellow-600"
+										: "text-red-600"
+							}`}
+						>
+							{overallScore}/100
+						</span>
+						<span
+							className={`text-sm font-medium px-2 py-1 rounded-full ${
+								riskLevel === "low"
+									? "bg-green-100 text-green-800"
+									: riskLevel === "moderate"
+										? "bg-yellow-100 text-yellow-800"
+										: "bg-red-100 text-red-800"
+							}`}
+						>
+							{riskLevel
+								? riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)
+								: ""}{" "}
+							Risk
+						</span>
+					</div>
+					{topConcerns.length > 0 && (
+						<div>
+							<p className="text-xs font-medium text-gray-600 mb-1">
+								Top Concerns:
+							</p>
+							<ul className="space-y-1">
+								{topConcerns.map((concern, i) => (
+									<li
+										key={i}
+										className="text-xs text-gray-700 flex items-start gap-1"
+									>
+										<span className="text-orange-500 mt-0.5">•</span>
+										{concern}
+									</li>
+								))}
+							</ul>
+						</div>
+					)}
+				</div>
+			)}
 
 			{/* Selected Text */}
 			{selectedText && (
@@ -124,7 +167,7 @@ const AnalysisSidebar = ({
 
 			{/* Analysis Sections */}
 			<div className="space-y-3">
-				{analysisResults.map((result, index) => (
+				{sections.map((section, index) => (
 					<div
 						key={index}
 						className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden"
@@ -134,47 +177,58 @@ const AnalysisSidebar = ({
 							onClick={() => toggleSection(index)}
 							className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
 						>
-							<div className="flex items-center gap-2">
-								<BookOpen className="w-5 h-5 text-indigo-600" />
-								<h3 className="font-semibold text-gray-900">
-									Page {result.sectionNumber}
+							<div className="flex items-center gap-2 flex-1 min-w-0">
+								<BookOpen className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+								<h3 className="font-semibold text-gray-900 text-left truncate">
+									{section.title}
 								</h3>
-								{result.redFlags && result.redFlags.length > 0 && (
-									<span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">
-										{result.redFlags.length} ⚠️
+								{section.redFlags && section.redFlags.length > 0 && (
+									<span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0">
+										{section.redFlags.length} ⚠️
 									</span>
 								)}
+								<span
+									className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${
+										section.score > 70
+											? "bg-green-100 text-green-800"
+											: section.score >= 40
+												? "bg-yellow-100 text-yellow-800"
+												: "bg-red-100 text-red-800"
+									}`}
+								>
+									{section.score}/100
+								</span>
 							</div>
-							{expandedSections[index] ? (
-								<ChevronUp className="w-5 h-5 text-gray-400" />
+							{expandedSections[index] === true ? (
+								<ChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
 							) : (
-								<ChevronDown className="w-5 h-5 text-gray-400" />
+								<ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
 							)}
 						</button>
 
 						{/* Expanded Content */}
-						{expandedSections[index] && (
+						{expandedSections[index] === true && (
 							<div className="p-4 pt-0 space-y-4">
-								{/* Simplified Summary */}
+								{/* Summary */}
 								<div>
 									<h4 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
 										<span className="text-blue-600">📖</span>
 										Simple Explanation
 									</h4>
 									<p className="text-sm text-gray-700 leading-relaxed">
-										{result.simplified}
+										{section.summary}
 									</p>
 								</div>
 
 								{/* Red Flags */}
-								{result.redFlags && result.redFlags.length > 0 && (
+								{section.redFlags && section.redFlags.length > 0 && (
 									<div>
 										<h4 className="font-medium text-red-900 mb-2 flex items-center gap-2">
 											<AlertTriangle className="w-4 h-4 text-red-600" />
 											Potential Issues
 										</h4>
 										<ul className="space-y-2">
-											{result.redFlags.map((flag, flagIndex) => (
+											{section.redFlags.map((flag, flagIndex) => (
 												<li
 													key={flagIndex}
 													className="text-sm text-gray-700 bg-red-50 p-2 rounded border-l-2 border-red-400"
@@ -183,13 +237,6 @@ const AnalysisSidebar = ({
 												</li>
 											))}
 										</ul>
-									</div>
-								)}
-
-								{/* Error Message */}
-								{result.error && (
-									<div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-										⚠️ {result.error}
 									</div>
 								)}
 

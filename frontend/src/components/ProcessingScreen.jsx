@@ -1,12 +1,8 @@
-import { Brain, FileText, Loader2 } from "lucide-react";
+import { Brain, Loader2 } from "lucide-react";
 import React from "react";
 
-const ProcessingScreen = ({ progress, totalPages }) => {
-	const isAnalyzing = progress.current > 0;
-	const percentComplete =
-		progress.total > 0
-			? Math.round((progress.current / progress.total) * 100)
-			: 0;
+const ProcessingScreen = ({ progress }) => {
+	const isAnalyzing = progress.sectionsReceived > 0;
 
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -25,31 +21,23 @@ const ProcessingScreen = ({ progress, totalPages }) => {
 
 					<p className="text-gray-600 text-center mb-6">
 						{isAnalyzing
-							? `Simplifying legal language and identifying red flags...`
+							? "Simplifying legal language and identifying red flags..."
 							: "Extracting text from your document..."}
 					</p>
 
 					{isAnalyzing && (
-						<>
-							<div className="w-full bg-gray-200 rounded-full h-3 mb-3">
-								<div
-									className="bg-indigo-600 h-3 rounded-full transition-all duration-500"
-									style={{ width: `${percentComplete}%` }}
-								/>
-							</div>
-
-							<p className="text-sm text-gray-600 mb-4">
-								Analyzing page {progress.current} of {progress.total}
+						<div className="text-center space-y-2">
+							<p className="text-sm font-medium text-indigo-700">
+								{progress.sectionsReceived} section
+								{progress.sectionsReceived !== 1 ? "s" : ""} analyzed so far
 							</p>
-						</>
+							{progress.currentSectionTitle && (
+								<p className="text-xs text-gray-500">
+									Currently analyzing: {progress.currentSectionTitle}
+								</p>
+							)}
+						</div>
 					)}
-
-					<div className="flex items-center gap-2 text-sm text-gray-500">
-						<FileText className="w-4 h-4" />
-						<span>
-							{totalPages} page{totalPages !== 1 ? "s" : ""} detected
-						</span>
-					</div>
 				</div>
 			</div>
 		</div>

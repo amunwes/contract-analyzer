@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { analyzeEntireContract } from "../services/anthropicService";
+import { analyzeContractWithStreaming } from "../services/anthropicService";
 import { extractTextFromPDF, renderAllPages } from "../utils/pdfUtils";
 import LandingPage from "./LandingPage";
 import ProcessingScreen from "./ProcessingScreen";
@@ -10,14 +10,19 @@ const ContractAnalyzer = () => {
 	const [stage, setStage] = useState("landing");
 	const [_contractFile, setContractFile] = useState(null);
 	const [pdfDoc, setPdfDoc] = useState(null);
-	const [totalPages, setTotalPages] = useState(0);
 	const [_extractedText, setExtractedText] = useState("");
 	const [selectedText, setSelectedText] = useState("");
 	const [renderedPages, setRenderedPages] = useState([]);
-	const [analysisResults, setAnalysisResults] = useState([]);
+	const [analysisResults, setAnalysisResults] = useState({
+		sections: [],
+		overallScore: null,
+		riskLevel: null,
+		topConcerns: [],
+		analysisId: null,
+	});
 	const [analysisProgress, setAnalysisProgress] = useState({
-		current: 0,
-		total: 0,
+		sectionsReceived: 0,
+		currentSectionTitle: null,
 	});
 	const lawyerFormRef = useRef(null);
 
@@ -45,20 +50,38 @@ const ContractAnalyzer = () => {
 				// Extract text from PDF
 				const { pdf, fullText } = await extractTextFromPDF(file);
 				setPdfDoc(pdf);
-				setTotalPages(pdf.numPages);
 				setExtractedText(fullText);
 
-				// Analyze the contract with Claude
-				const results = await analyzeEntireContract(
+				// Analyze the contract with Claude (streaming — callbacks drive state)
+				analyzeContractWithStreaming(
 					fullText,
-					pdf.numPages,
-					(current, total) => {
-						setAnalysisProgress({ current, total });
+					(event) => {
+						if (event.type === "section") {
+							setAnalysisResults((prev) => ({
+								...prev,
+								sections: [...prev.sections, event.section],
+							}));
+							setAnalysisProgress((prev) => ({
+								sectionsReceived: prev.sectionsReceived + 1,
+								currentSectionTitle: event.section.title,
+							}));
+						} else if (event.type === "complete") {
+							setAnalysisResults((prev) => ({
+								...prev,
+								overallScore: event.overallScore,
+								riskLevel: event.riskLevel,
+								topConcerns: event.topConcerns,
+								analysisId: crypto.randomUUID(),
+							}));
+							setStage("results");
+						}
+					},
+					(errorMessage) => {
+						console.error("Streaming analysis error:", errorMessage);
+						alert(`Error: ${errorMessage}`);
+						setStage("landing");
 					},
 				);
-
-				setAnalysisResults(results);
-				setStage("results");
 			} catch (error) {
 				console.error("Error processing PDF:", error);
 				alert(`Error: ${error.message}`);
@@ -134,7 +157,7 @@ const ContractAnalyzer = () => {
 			{stage === "landing" && <LandingPage onFileUpload={handleFileUpload} />}
 
 			{stage === "processing" && (
-				<ProcessingScreen progress={analysisProgress} totalPages={totalPages} />
+				<ProcessingScreen progress={analysisProgress} />
 			)}
 
 			{stage === "results" && (

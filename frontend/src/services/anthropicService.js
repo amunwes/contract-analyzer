@@ -1,99 +1,95 @@
-// src/services/anthropicService.js
-// Updated to call our backend instead of Anthropic API directly
-
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
 /**
- * Analyzes a section of contract text using our backend
- * @param {string} sectionText - The text to analyze
- * @param {number} sectionNumber - The section/page number
- * @returns {Promise<{simplified: string, redFlags: string[]}>}
+ * Streams a full-document contract analysis from the backend.
+ * @param {string} contractText - Complete extracted text of the contract
+ * @param {(event: SectionEvent | CompleteEvent) => void} onProgress - Called for each parsed NDJSON line
+ * @param {(message: string) => void} onError - Called on network or parse failure
+ *
+ * SectionEvent: { type: 'section', section: { title, summary, redFlags, score } }
+ * CompleteEvent: { type: 'complete', overallScore, riskLevel, topConcerns }
  */
-export const analyzeContractSection = async (sectionText, sectionNumber) => {
+export const analyzeContractWithStreaming = async (
+	contractText,
+	onProgress,
+	onError,
+) => {
 	try {
 		const response = await fetch(`${BACKEND_URL}/api/analyze`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
-			body: JSON.stringify({
-				sectionText,
-				sectionNumber,
-			}),
+			body: JSON.stringify({ contractText }),
 		});
 
 		if (!response.ok) {
-			const errorData = await response.json();
-			throw new Error(
-				`Backend Error: ${errorData.error || response.statusText}`,
-			);
+			const errorData = await response
+				.json()
+				.catch(() => ({ error: response.statusText }));
+			onError(errorData.error || response.statusText);
+			return;
 		}
 
-		const data = await response.json();
-		return data;
+		const reader = response.body.getReader();
+		const decoder = new TextDecoder();
+		let buffer = "";
+
+		while (true) {
+			const { done, value } = await reader.read();
+
+			if (done) break;
+
+			buffer += decoder.decode(value, { stream: true });
+			const lines = buffer.split("\n");
+			buffer = lines.pop() ?? "";
+
+			for (const line of lines) {
+				const trimmed = line.trim();
+				if (!trimmed) continue;
+				try {
+					const obj = JSON.parse(trimmed);
+					if (obj.error) {
+						onError(obj.error);
+						return;
+					}
+					if (obj.section) {
+						onProgress({ type: "section", section: obj.section });
+					} else if (obj.overallScore !== undefined) {
+						onProgress({
+							type: "complete",
+							overallScore: obj.overallScore,
+							riskLevel: obj.riskLevel,
+							topConcerns: obj.topConcerns,
+						});
+					}
+				} catch {
+					// Silently skip lines that fail JSON.parse
+				}
+			}
+		}
+
+		const remaining = buffer.trim();
+		if (remaining) {
+			try {
+				const obj = JSON.parse(remaining);
+				if (obj.error) {
+					onError(obj.error);
+				} else if (obj.section) {
+					onProgress({ type: "section", section: obj.section });
+				} else if (obj.overallScore !== undefined) {
+					onProgress({
+						type: "complete",
+						overallScore: obj.overallScore,
+						riskLevel: obj.riskLevel,
+						topConcerns: obj.topConcerns,
+					});
+				}
+			} catch {
+				// Skip invalid remaining buffer
+			}
+		}
 	} catch (error) {
-		console.error("Error analyzing section:", error);
-		throw error;
+		onError(error.message);
 	}
-};
-
-/**
- * Analyzes an entire PDF by splitting it into sections
- * @param {string} fullText - The complete extracted PDF text
- * @param {number} totalPages - Total number of pages
- * @param {Function} onProgress - Progress callback (current, total)
- * @returns {Promise<Array>} Array of analysis results
- */
-export const analyzeEntireContract = async (
-	fullText,
-	totalPages,
-	onProgress,
-) => {
-	// Split text by page markers
-	const pageRegex = /--- Page (\d+) ---\n([\s\S]*?)(?=\n--- Page \d+ ---|$)/g;
-	const sections = [];
-	let match;
-
-	while ((match = pageRegex.exec(fullText)) !== null) {
-		sections.push({
-			pageNumber: parseInt(match[1]),
-			text: match[2].trim(),
-		});
-	}
-
-	if (sections.length === 0) {
-		// Fallback: treat entire text as one section
-		sections.push({
-			pageNumber: 1,
-			text: fullText,
-		});
-	}
-
-	const results = [];
-
-	for (let i = 0; i < sections.length; i++) {
-		const section = sections[i];
-
-		if (onProgress) {
-			onProgress(i + 1, sections.length);
-		}
-
-		try {
-			const analysis = await analyzeContractSection(
-				section.text,
-				section.pageNumber,
-			);
-			results.push(analysis);
-		} catch (error) {
-			console.error(`Error analyzing page ${section.pageNumber}:`, error);
-			results.push({
-				sectionNumber: section.pageNumber,
-				simplified: "Error analyzing this section",
-				redFlags: [],
-				error: error.message,
-			});
-		}
-	}
-
-	return results;
 };
