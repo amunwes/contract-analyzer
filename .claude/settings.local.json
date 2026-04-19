@@ -17,7 +17,9 @@
       "Bash(sqlite3 backend/data/contract_analyzer.db \".tables\")",
       "Bash(sqlite3 backend/data/contract_analyzer.db \".schema lawyer_inquiries\")",
       "Bash(kill %1)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(curl -s http://localhost:3001)",
+      "Bash(ls:*)"
     ]
   }
 }

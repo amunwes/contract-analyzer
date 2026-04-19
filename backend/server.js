@@ -4,9 +4,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 import db from "./db/index.js";
 
-dotenv.config({ path: '.env.local' });
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, ".env.local"), override: true });
+console.log("API key loaded:", process.env.ANTHROPIC_API_KEY ? "yes" : "NO — check .env.local");
 
 db.raw('SELECT 1')
   .then(() => console.log('Database connection established'))
@@ -25,8 +29,9 @@ app.use(express.json());
 
 // Analyze contract section endpoint
 app.post("/api/analyze", async (req, res) => {
+	const { sectionText, sectionNumber } = req.body;
+	console.log(`[analyze] section ${sectionNumber}, text length: ${sectionText?.length}`);
 	try {
-		const { sectionText, sectionNumber } = req.body;
 
 		const prompt = `You are a legal document simplification assistant. Your job is to help everyday people understand employment contracts.
 
@@ -52,8 +57,9 @@ RED FLAGS:
 - [Red flag 2 with brief explanation]
 (Or write "None identified" if there are no concerning items)`;
 
+		console.log(`[analyze] calling Anthropic for section ${sectionNumber}...`);
 		const message = await anthropic.messages.create({
-			model: "claude-sonnet-4-20250514",
+			model: "claude-sonnet-4-5",
 			max_tokens: 2048,
 			messages: [
 				{
@@ -62,6 +68,7 @@ RED FLAGS:
 				},
 			],
 		});
+		console.log(`[analyze] Anthropic responded for section ${sectionNumber}`);
 
 		const analysisText = message.content[0].text;
 
