@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import express from "express";
 import db from "./db/index.js";
 
-dotenv.config();
+dotenv.config({ path: '.env.local' });
 
 db.raw('SELECT 1')
   .then(() => console.log('Database connection established'))
